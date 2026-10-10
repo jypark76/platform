@@ -86,19 +86,23 @@ already holds them. A result carries only the grade and why.
 - **A repeat** is recognised: the assessment service answers a grade it already has with the
   same grade, and nothing is added. Kafka may deliver a message more than once, and this is
   why that is harmless.
-- **An out-of-date result** (the submission has moved on, or is no longer waiting for a grade,
+- **An out-of-date result** (a version the submission HAD, but it has moved on, or it is no longer
+  waiting for a grade,
   for example because another grade for that version was recorded first) is a normal race,
   not an error. It is dropped, and only its submission ID and the word "outdated" are logged.
 - **A message that can never be recorded** is copied to `grading-results.dead-letter`, with a
   short reason in a header called `error`, and then marked done so it cannot block the
   messages behind it. This covers: not valid JSON, an unknown `schema_version`, a rule above
-  broken, a key that does not equal `submission_id`, a submission that does not exist, and a
-  save the database refuses for that message alone (data it cannot store).
+  broken, a key that does not equal `submission_id`, a submission that does not exist, a
+  `based_on_version` higher than any version the submission has ever had (the grader copied back
+  the wrong number, which is a bug to look at and not a race), and a save the database refuses
+  for that message alone (data it cannot store).
 - **Temporary trouble**, such as the database being down, is not marked done. The message is
   tried again.
 
 The reason codes in the `error` header are: `invalid_json`, `unknown_schema_version`,
-`invalid_field`, `key_mismatch`, `unknown_submission` and `record_rejected`. The reader never
+`invalid_field`, `key_mismatch`, `unknown_submission`, `unknown_version` and
+`record_rejected`. The reader never
 puts student text or reasoning in its logs.
 
 ## The dead-letter topic
