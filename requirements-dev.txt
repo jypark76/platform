@@ -1,0 +1,8 @@
+# In plain English: the libraries needed only for running the automated checks on
+# the Kubernetes files. This repo has no service code, so there is nothing else.
+
+# The test runner.
+pytest==9.1.1
+
+# Reads the rendered Kubernetes files in the Kubernetes file checks.
+pyyaml==6.0.3
