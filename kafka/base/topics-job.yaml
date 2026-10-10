@@ -1,0 +1,58 @@
+# In plain English: a one-time job that creates the first topic, "approved-examples".
+# A topic is one named notebook in Kafka. Later, approved graded essays will be
+# posted here for the knowledge service to read.
+#
+# The job waits until Kafka answers, then creates the topic. "--if-not-exists"
+# means that if the topic is already there it does nothing, so running the deploy
+# twice never fails. The topic has 3 lanes (partitions), so up to 3 readers can work
+# in parallel, and messages are kept for 7 days (604800000 milliseconds). There is
+# only one broker, so only one copy of each message exists.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-create-topics
+  namespace: kafka
+spec:
+  backoffLimit: 4
+  # Kubernetes removes the finished job after an hour. The deploy script also removes
+  # the old one first, because a job cannot be changed after it is made.
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: create-topics
+          image: apache/kafka
+          env:
+            - name: KAFKA_HEAP_OPTS
+              value: "-Xms64m -Xmx256m"
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -eu
+              for attempt in {1..60}; do
+                if /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list; then
+                  break
+                fi
+                echo "Waiting for the broker (attempt $attempt of 60)"
+                sleep 5
+              done
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic approved-examples \
+                --partitions 3 --replication-factor 1 \
+                --config retention.ms=604800000
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

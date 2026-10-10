@@ -1,0 +1,7 @@
+# In plain English: a labelled room of its own in the cluster for Kafka, like the
+# "assessment" and "knowledge" rooms the services live in. Everything Kafka needs
+# goes inside this room, which keeps it apart from the other services.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka

@@ -1,0 +1,39 @@
+# In plain English: two fixed addresses for Kafka inside the cluster. Neither can be
+# reached from outside the cluster.
+#
+# 1. "kafka-headless" gives the Kafka pod its own stable name, kafka-0. Kafka tells
+#    its clients to come back to that exact name, so the name has to exist. It also
+#    lists the pod before it is ready, so the name works while Kafka is still starting.
+# 2. "kafka" is the address other services use to first connect: kafka:9092.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-headless
+  namespace: kafka
+  labels:
+    app: kafka
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: kafka
+  ports:
+    - name: client
+      port: 9092
+    - name: controller
+      port: 9093
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: kafka
+  labels:
+    app: kafka
+spec:
+  selector:
+    app: kafka
+  ports:
+    - name: client
+      port: 9092
+      targetPort: client
