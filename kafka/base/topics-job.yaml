@@ -1,12 +1,18 @@
-# In plain English: a one-time job that creates the first topic, "approved-examples".
-# A topic is one named notebook in Kafka. Later, approved graded essays will be
-# posted here for the knowledge service to read.
+# In plain English: a one-time job that creates the topics, the named notebooks in
+# Kafka. There are two so far:
 #
-# The job waits until Kafka answers, then creates the topic. "--if-not-exists"
-# means that if the topic is already there it does nothing, so running the deploy
-# twice never fails. The topic has 3 lanes (partitions), so up to 3 readers can work
-# in parallel, and messages are kept for 7 days (604800000 milliseconds). There is
-# only one broker, so only one copy of each message exists.
+# - "approved-examples": approved graded essays are posted here for the knowledge
+#   service to read. It has 3 lanes (partitions), so up to 3 readers can work in
+#   parallel, and messages are kept for 7 days (604800000 milliseconds). Its message
+#   format is written down in contracts/approved-examples.md.
+# - "approved-examples.dead-letter": where the reader puts a message it can never save
+#   (a bad format, a clash), with a short reason, so one bad message cannot block the
+#   others. It has 1 lane because there should be very few, and it keeps messages for
+#   30 days (2592000000 milliseconds) so a person has time to look.
+#
+# The job waits until Kafka answers, then creates the topics. "--if-not-exists"
+# means that if a topic is already there it does nothing, so running the deploy
+# twice never fails. There is only one broker, so only one copy of each message exists.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -46,6 +52,10 @@ spec:
                 --create --if-not-exists --topic approved-examples \
                 --partitions 3 --replication-factor 1 \
                 --config retention.ms=604800000
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic approved-examples.dead-letter \
+                --partitions 1 --replication-factor 1 \
+                --config retention.ms=2592000000
           resources:
             requests:
               cpu: 100m
