@@ -8,6 +8,7 @@
 # feeds the checker deliberately broken files and confirms it complains about each
 # one. Those self-tests need no Kubernetes tools and always run.
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -207,6 +208,43 @@ def test_the_topic_job_is_safe_to_run_again(real_docs):
     text = " ".join(words)
     assert "--if-not-exists" in text
     assert "approved-examples" in text
+
+
+# In plain English: the job must also create the dead-letter topic, the place where
+# the reader puts messages it can never save (bad format, a clash). Every topic the
+# job creates must be safe to run again, so there must be one "--if-not-exists" for
+# each create command, and the dead-letter topic must be kept longer than the main one
+# so a person has time to look at what went wrong.
+def test_the_topic_job_also_creates_the_dead_letter_topic(real_docs):
+    job = next(doc for doc in real_docs if doc["kind"] == "Job")
+    text = " ".join(
+        str(word)
+        for container in containers_of(job)
+        for word in container.get("command", []) + container.get("args", [])
+    )
+    assert "approved-examples.dead-letter" in text
+    assert text.count("--create") == 2
+    assert text.count("--if-not-exists") == text.count("--create")
+    main_days = int(text.split("--topic approved-examples ")[1].split("retention.ms=")[1].split()[0]) // 86_400_000
+    dead_days = int(text.split("--topic approved-examples.dead-letter ")[1].split("retention.ms=")[1].split()[0]) // 86_400_000
+    assert dead_days > main_days
+
+
+# In plain English: every topic the job creates must be described in a written
+# contract (a file in the contracts folder). A topic with no written format is how
+# the sender and the reader end up disagreeing about what a message looks like.
+def test_every_topic_has_a_written_contract(real_docs):
+    job = next(doc for doc in real_docs if doc["kind"] == "Job")
+    text = " ".join(
+        str(word)
+        for container in containers_of(job)
+        for word in container.get("command", []) + container.get("args", [])
+    )
+    topics = re.findall(r"--topic (\S+)", text)
+    assert len(topics) >= 2
+    contracts = " ".join(path.read_text(encoding="utf-8") for path in (ROOT / "contracts").glob("*.md"))
+    for topic in topics:
+        assert f"`{topic}`" in contracts, f"no written contract mentions the topic {topic}"
 
 
 # In plain English: the broker must keep its messages on a volume. Without one, a

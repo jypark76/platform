@@ -10,8 +10,13 @@ themselves live in their own repos: `knowledge-service` and `assessment-service`
 - **Kafka**, a message queue that sits between the services. One real Apache Kafka
   broker (the official `apache/kafka` image, version 3.9.0, no ZooKeeper) in its own
   `kafka` namespace on the Docker Desktop cluster. It keeps its messages on a 1 GB saved
-  disk, so a restart does not lose them. A one-time job creates the first topic,
-  `approved-examples` (3 lanes, messages kept for 7 days).
+  disk, so a restart does not lose them. A one-time job creates the topics:
+  `approved-examples` (3 lanes, messages kept for 7 days) and
+  `approved-examples.dead-letter` (1 lane, kept for 30 days) for messages the reader
+  can never save.
+- **Contracts**, in [`contracts/`](contracts): the agreed format of each message, shared
+  by the service that sends it and the service that reads it. Every topic has one, and a
+  test checks that none is missing.
 - Later: the autoscaler for the grader workers (KEDA) and the AWS setup.
 
 ## Deploying Kafka on the laptop
