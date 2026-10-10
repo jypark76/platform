@@ -64,8 +64,9 @@ reader's:
 | `reasoning` | 10,000 characters | 10,000 characters |
 
 If you change a limit in either service, change the other service and this table in the
-same piece of work. Each service has a test that fails if its own limit drifts from this
-table.
+same piece of work. Each service gets a test that fails if its own limit drifts from this
+table. The reader's test arrives with the reader, and the sender's test arrives with the
+sender. Until the sender exists, the sender's column describes its current limits.
 
 **No extra fields.** A field that is not in the table is a mistake and the message is
 refused. To add or change a field, raise `schema_version` to 2 and update this file. The
