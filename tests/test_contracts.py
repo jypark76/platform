@@ -20,6 +20,7 @@ EXPECTED = {
             "assignment_id": "",
             "rubric": "10,000",
             "student_work": "20,000",
+            "feedback": "10,000",
         },
     ),
     "grading-results.md": (
@@ -78,3 +79,24 @@ def test_the_results_contract_matches_what_the_grade_route_accepts():
     # (1-10,000). The results message carries exactly those, plus the version and the ID.
     rows = value_rows((CONTRACTS / "grading-results.md").read_text(encoding="utf-8"))
     assert {"based_on_version", "ai_grade", "ai_reasoning"} <= set(rows)
+
+
+# A job sent again after an instructor rejected a grade must carry the instructor's reason,
+# or the grader sees exactly the same input as before and the submission loops forever
+# between graded and rejected. The field is optional: a first-time job has no feedback.
+def test_the_jobs_contract_carries_the_instructors_feedback_on_a_regrade_and_says_it_is_optional():
+    text = (CONTRACTS / "grading-jobs.md").read_text(encoding="utf-8")
+    row = value_rows(text)["feedback"]
+    assert "optional" in row.lower()
+    assert "rejected" in row.lower()
+    assert "left out" in row.lower() or "absent" in row.lower()
+    # The reviewer's name is still not shared.
+    assert "reviewer" in text.lower()
+
+
+# The results route trims spaces from the grade only. It keeps the reasoning exactly as
+# written. The contract must say so, not claim that both are trimmed.
+def test_the_results_contract_describes_the_trimming_rules_truthfully():
+    text = (CONTRACTS / "grading-results.md").read_text(encoding="utf-8")
+    assert "exactly as written" in text
+    assert "spaces at either end are trimmed" not in text

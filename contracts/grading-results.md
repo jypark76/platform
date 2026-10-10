@@ -46,9 +46,10 @@ An example:
 ```
 
 These are the same fields, with the same limits, that the assessment service's own route
-`POST /submissions/{id}/grades` accepts. **Text rules** are the same too: spaces at either end
-are trimmed, and text must not contain a null character or anything that cannot be written
-as valid Unicode.
+`POST /submissions/{id}/grades` accepts. **Text rules** are the same too, and they differ
+between the two texts: `ai_grade` has its spaces at either end trimmed, while `ai_reasoning`
+is kept exactly as written. Neither may be blank, and neither may contain a null character
+or anything that cannot be written as valid Unicode.
 
 **The limits must fit at both ends.** The grader must never produce a grade the assessment
 service will refuse:

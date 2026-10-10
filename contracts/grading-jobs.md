@@ -36,6 +36,7 @@ always land in the same lane, in order.
 | `assignment_id` | UUID text | The assignment it belongs to. |
 | `rubric` | text | 1 to 10,000 characters. The assignment's grading instructions, copied in so the grader does not have to ask for them. |
 | `student_work` | text | 1 to 20,000 characters. |
+| `feedback` | text | Optional. 1 to 10,000 characters. Only on a job sent again after an instructor rejected a grade: the instructor's written reason, so the grader can do better. Left out on a first-time job. |
 
 An example:
 
@@ -50,9 +51,9 @@ An example:
 }
 ```
 
-**Text rules** are the same as for the assessment service's own routes: a null character or
-anything that cannot be written as valid Unicode is refused, and a text that is only spaces
-is blank.
+**Text rules** are the same as for the assessment service's own routes: the rubric, the work
+and the feedback are kept exactly as written. A null character or anything that cannot be
+written as valid Unicode is refused, and a text that is only spaces is blank.
 
 **The limits must fit at both ends.** The sender must never be able to create a job the
 reader will refuse. The sender's limits are the assessment service's own limits, and the
@@ -62,6 +63,7 @@ reader accepts the same:
 |---|---|---|
 | `rubric` | 10,000 characters | 10,000 characters |
 | `student_work` | 20,000 characters | 20,000 characters |
+| `feedback` | 10,000 characters | 10,000 characters |
 
 If you change a limit in either service, change the other service and this table in the same
 piece of work. Each service gets a test that fails if its own limit drifts from this table.
@@ -72,14 +74,18 @@ agreement.
 refused. To add or change a field, raise `schema_version` to 2 and update this file. The
 reader refuses any version it does not know.
 
-**Left out on purpose:** the student's name and anything else that identifies a person.
-Student names live only in the assessment service. The grader must never see them. Keep it
+**Left out on purpose:** the student's name, the reviewer's name and anything else that
+identifies a person. Names live only in the assessment service. The grader must never
+see them. Keep it
 that way: grading must not depend on, or leak, who the student is.
 
 ## What the sender must do
 
 - Send one job when a submission is waiting for a grade: its newest version is "submitted"
   (a first submission) or "rejected" (an instructor sent it back for a new grade).
+- For a job after a rejection, put the instructor's feedback in `feedback`. Without it the
+  grader would see exactly what it saw before and could only repeat its grade. For a
+  first-time job, leave `feedback` out altogether. The instructor's name is never sent.
 - Put the submission ID in both the key and `submission_id`, and the waiting version in
   `based_on_version`.
 - Send messages that follow the rules above. The reader will not repair a bad one.
