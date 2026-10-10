@@ -92,13 +92,14 @@ already holds them. A result carries only the grade and why.
 - **A message that can never be recorded** is copied to `grading-results.dead-letter`, with a
   short reason in a header called `error`, and then marked done so it cannot block the
   messages behind it. This covers: not valid JSON, an unknown `schema_version`, a rule above
-  broken, a key that does not equal `submission_id`, and a submission that does not exist.
+  broken, a key that does not equal `submission_id`, a submission that does not exist, and a
+  save the database refuses for that message alone (data it cannot store).
 - **Temporary trouble**, such as the database being down, is not marked done. The message is
   tried again.
 
 The reason codes in the `error` header are: `invalid_json`, `unknown_schema_version`,
-`invalid_field`, `key_mismatch` and `unknown_submission`. The reader never puts student text
-in its logs.
+`invalid_field`, `key_mismatch`, `unknown_submission` and `record_rejected`. The reader never
+puts student text or reasoning in its logs.
 
 ## The dead-letter topic
 

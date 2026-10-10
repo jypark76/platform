@@ -94,12 +94,13 @@ a service that must not hold personal data.
   short reason in a header called `error`, and then marked done so it cannot block the
   messages behind it. This covers: not valid JSON, an unknown `schema_version`, a rule above
   broken, a key that does not equal `source_submission_id`, and a `source_submission_id`
-  already used by a different example.
+  already used by a different example, and a save the database refuses for that message alone
+  (data it cannot store).
 - **Temporary trouble**, such as the database being down, is not marked done. The message is
   tried again.
 
 The reason codes in the `error` header are: `invalid_json`, `unknown_schema_version`,
-`invalid_field`, `key_mismatch` and `label_conflict`. The reader never puts student text in
+`invalid_field`, `key_mismatch`, `label_conflict` and `save_rejected`. The reader never puts student text in
 its logs.
 
 ## The dead-letter topic
