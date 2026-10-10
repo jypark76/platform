@@ -7,4 +7,4 @@ resources:
   - ../../base
 images:
   - name: apache/kafka
-    newTag: "3.9.0"
+    newTag: "latest"
