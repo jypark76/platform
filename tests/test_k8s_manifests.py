@@ -210,24 +210,62 @@ def test_the_topic_job_is_safe_to_run_again(real_docs):
     assert "approved-examples" in text
 
 
-# In plain English: the job must also create the dead-letter topic, the place where
-# the reader puts messages it can never save (bad format, a clash). Every topic the
-# job creates must be safe to run again, so there must be one "--if-not-exists" for
-# each create command, and the dead-letter topic must be kept longer than the main one
-# so a person has time to look at what went wrong.
-def test_the_topic_job_also_creates_the_dead_letter_topic(real_docs):
+# In plain English: the text of every command the topic job runs, as one string.
+def topic_job_text(real_docs):
     job = next(doc for doc in real_docs if doc["kind"] == "Job")
-    text = " ".join(
+    return " ".join(
         str(word)
         for container in containers_of(job)
         for word in container.get("command", []) + container.get("args", [])
     )
-    assert "approved-examples.dead-letter" in text
-    assert text.count("--create") == 2
+
+
+# In plain English: reads each "--create ... --topic NAME --partitions N ... retention.ms=MS"
+# command and returns {NAME: (lanes, days kept)}. A topic created twice is an error, so it
+# is reported by the length check in the test below.
+def topics_created(text):
+    found = {}
+    for command in text.split("--create")[1:]:
+        name = re.search(r"--topic (\S+)", command).group(1)
+        lanes = int(re.search(r"--partitions (\d+)", command).group(1))
+        days = int(re.search(r"retention\.ms=(\d+)", command).group(1)) // 86_400_000
+        assert name not in found, f"topic {name} is created twice"
+        found[name] = (lanes, days)
+    return found
+
+
+# In plain English: the job must create exactly the topics we agreed, with the agreed number
+# of lanes and days kept. Approved examples go to the knowledge service. Grading jobs go to
+# the grader (6 lanes, because grading is the slow step and the lanes cap how many workers
+# can work at once). Grading results come back to the assessment service. Each has a
+# dead-letter topic for messages that can never be handled, kept 30 days so a person can look.
+def test_the_topic_job_creates_exactly_the_agreed_topics(real_docs):
+    text = topic_job_text(real_docs)
+    assert text.count("--create") == 6
     assert text.count("--if-not-exists") == text.count("--create")
-    main_days = int(text.split("--topic approved-examples ")[1].split("retention.ms=")[1].split()[0]) // 86_400_000
-    dead_days = int(text.split("--topic approved-examples.dead-letter ")[1].split("retention.ms=")[1].split()[0]) // 86_400_000
-    assert dead_days > main_days
+    assert topics_created(text) == {
+        "approved-examples": (3, 7),
+        "approved-examples.dead-letter": (1, 30),
+        "grading-jobs": (6, 7),
+        "grading-jobs.dead-letter": (1, 30),
+        "grading-results": (3, 7),
+        "grading-results.dead-letter": (1, 30),
+    }
+
+
+# In plain English: whatever topics exist, every dead-letter topic must belong to a main
+# topic, every main topic must have one, and the dead-letter topic must have 1 lane and be
+# kept longer, so a person has time to look at what went wrong.
+def test_every_topic_has_a_longer_kept_dead_letter_topic(real_docs):
+    topics = topics_created(topic_job_text(real_docs))
+    mains = {name for name in topics if not name.endswith(".dead-letter")}
+    dead = {name for name in topics if name.endswith(".dead-letter")}
+    assert mains, "no topics found"
+    assert {f"{name}.dead-letter" for name in mains} == dead
+    for name in mains:
+        lanes, days = topics[f"{name}.dead-letter"]
+        assert lanes == 1
+        assert days > topics[name][1]
 
 
 # In plain English: every topic the job creates must be described in a written
@@ -241,7 +279,7 @@ def test_every_topic_has_a_written_contract(real_docs):
         for word in container.get("command", []) + container.get("args", [])
     )
     topics = re.findall(r"--topic (\S+)", text)
-    assert len(topics) >= 2
+    assert len(topics) == 6
     contracts = " ".join(path.read_text(encoding="utf-8") for path in (ROOT / "contracts").glob("*.md"))
     for topic in topics:
         assert f"`{topic}`" in contracts, f"no written contract mentions the topic {topic}"

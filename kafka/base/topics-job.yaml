@@ -1,14 +1,19 @@
 # In plain English: a one-time job that creates the topics, the named notebooks in
-# Kafka. There are two so far:
+# Kafka. There are six, in three pairs. Each pair is a topic and its dead-letter topic,
+# where a reader puts a message it can never handle (a bad format, a clash), with a short
+# reason, so one bad message cannot block the others. Every dead-letter topic has 1 lane,
+# because there should be very few, and keeps messages for 30 days (2592000000
+# milliseconds) so a person has time to look. The main topics keep messages for 7 days
+# (604800000 milliseconds). Each topic's message format is written down in contracts/.
 #
-# - "approved-examples": approved graded essays are posted here for the knowledge
-#   service to read. It has 3 lanes (partitions), so up to 3 readers can work in
-#   parallel, and messages are kept for 7 days (604800000 milliseconds). Its message
-#   format is written down in contracts/approved-examples.md.
-# - "approved-examples.dead-letter": where the reader puts a message it can never save
-#   (a bad format, a clash), with a short reason, so one bad message cannot block the
-#   others. It has 1 lane because there should be very few, and it keeps messages for
-#   30 days (2592000000 milliseconds) so a person has time to look.
+# - "approved-examples" (3 lanes): approved graded essays, posted by the assessment
+#   service for the knowledge service to read. The number of lanes is the most readers
+#   that can work in parallel.
+# - "grading-jobs" (6 lanes): submissions waiting for a grade, posted by the assessment
+#   service for the grader workers. Grading is the slow step, so it gets the most lanes:
+#   the lanes are the ceiling on how many workers can grade at once.
+# - "grading-results" (3 lanes): the grades coming back, posted by the grader workers for
+#   the assessment service to record.
 #
 # The job waits until Kafka answers, then creates the topics. "--if-not-exists"
 # means that if a topic is already there it does nothing, so running the deploy
@@ -54,6 +59,22 @@ spec:
                 --config retention.ms=604800000
               /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
                 --create --if-not-exists --topic approved-examples.dead-letter \
+                --partitions 1 --replication-factor 1 \
+                --config retention.ms=2592000000
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic grading-jobs \
+                --partitions 6 --replication-factor 1 \
+                --config retention.ms=604800000
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic grading-jobs.dead-letter \
+                --partitions 1 --replication-factor 1 \
+                --config retention.ms=2592000000
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic grading-results \
+                --partitions 3 --replication-factor 1 \
+                --config retention.ms=604800000
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic grading-results.dead-letter \
                 --partitions 1 --replication-factor 1 \
                 --config retention.ms=2592000000
           resources:

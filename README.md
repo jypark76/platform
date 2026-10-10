@@ -3,17 +3,27 @@
 The shared pieces that several services of the AI assessment grader use. The services
 themselves live in their own repos: `knowledge-service` and `assessment-service`.
 
-**Status: early.** Kafka runs on a laptop cluster. Nothing talks to it yet.
+**Status: early.** Kafka runs on a laptop cluster. The assessment service sends approved
+examples through it and the knowledge service reads them. The grading topics are created
+but not used yet.
 
 ## What it holds
 
 - **Kafka**, a message queue that sits between the services. One real Apache Kafka
   broker (the official `apache/kafka` image, version 3.9.0, no ZooKeeper) in its own
   `kafka` namespace on the Docker Desktop cluster. It keeps its messages on a 1 GB saved
-  disk, so a restart does not lose them. A one-time job creates the topics:
-  `approved-examples` (3 lanes, messages kept for 7 days) and
-  `approved-examples.dead-letter` (1 lane, kept for 30 days) for messages the reader
-  can never save.
+  disk, so a restart does not lose them. A one-time job creates the topics, three pairs of a topic and its dead-letter
+  topic (where a reader puts a message it can never handle, with a reason, kept 30 days):
+
+  | Topic | Written by | Read by | Lanes | Kept |
+  |---|---|---|---|---|
+  | `approved-examples` | assessment service | knowledge service | 3 | 7 days |
+  | `grading-jobs` | assessment service | grader worker | 6 | 7 days |
+  | `grading-results` | grader worker | assessment service | 3 | 7 days |
+
+  Each has a `.dead-letter` topic with 1 lane. The lanes are the most readers that can work
+  at once, so `grading-jobs` (grading is the slow step) has the most. Only the first pair is
+  in use so far; the grading pairs are ready but nothing reads or writes them yet.
 - **Contracts**, in [`contracts/`](contracts): the agreed format of each message, shared
   by the service that sends it and the service that reads it. Every topic has one, and a
   test checks that none is missing.
