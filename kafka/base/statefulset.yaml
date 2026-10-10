@@ -1,0 +1,122 @@
+# In plain English: this runs one real Apache Kafka broker. It is a "StatefulSet",
+# not a Deployment, because Kafka keeps its messages on disk. A StatefulSet gives
+# the pod a fixed name (kafka-0) and its own saved disk, so a restart brings back
+# the same pod with all its messages.
+#
+# The image version is NOT written here. The overlay pins it (3.9.0), so the base
+# stays the same for every environment.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: kafka
+  labels:
+    app: kafka
+spec:
+  serviceName: kafka-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      # Kubernetes would otherwise add settings for every Service in the room to the
+      # pod, including a KAFKA_PORT one that breaks Kafka's own settings.
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 60
+      # Runs as a normal user (1000 is the user inside the Kafka image), never as
+      # root. fsGroup makes the saved disk writable for that user.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: kafka
+          image: apache/kafka
+          ports:
+            - name: client
+              containerPort: 9092
+            - name: controller
+              containerPort: 9093
+          env:
+            # This one machine is both the message broker and its own controller
+            # (the newer Kafka mode with no separate ZooKeeper).
+            - name: KAFKA_NODE_ID
+              value: "1"
+            - name: KAFKA_PROCESS_ROLES
+              value: "broker,controller"
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
+            # The name Kafka tells its clients to use. It is the pod's own stable name.
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka-0.kafka-headless.kafka.svc.cluster.local:9092"
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "1@localhost:9093"
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: "PLAINTEXT"
+            # With one broker there is nobody to keep a second copy, so every
+            # internal topic keeps just one.
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "1"
+            - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+              value: "0"
+            # Where Kafka keeps its messages: on the saved disk below.
+            - name: KAFKA_LOG_DIRS
+              value: "/var/lib/kafka/data"
+            # A fixed name for this Kafka. It is not a secret.
+            - name: CLUSTER_ID
+              value: "5L6g3nShT-eMCtK--X86sw"
+            # Keep the Java memory small so Kafka fits on a laptop.
+            - name: KAFKA_HEAP_OPTS
+              value: "-Xms256m -Xmx512m"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          # "Started" means something is listening on the Kafka port. Kafka can take
+          # a while on a laptop, so the start-up check waits up to about 3 minutes.
+          startupProbe:
+            tcpSocket:
+              port: client
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            tcpSocket:
+              port: client
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: client
+            periodSeconds: 20
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/kafka/data
+  # The saved disk. It belongs to the pod name, so kafka-0 always gets the same one
+  # back, with its messages.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

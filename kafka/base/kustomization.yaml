@@ -1,0 +1,10 @@
+# In plain English: the list of files that make up Kafka's setup, shared by every
+# environment. The settings that differ by environment (like the image version)
+# come from the overlay folders.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - service.yaml
+  - statefulset.yaml
+  - topics-job.yaml
