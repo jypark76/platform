@@ -33,7 +33,7 @@ land in the same lane.
 | `assignment_id` | UUID text | The assignment it belongs to. |
 | `student_work` | text | 1 to 20,000 characters. |
 | `grade` | text | 1 to 100 characters. |
-| `reasoning` | text | 1 to 5,000 characters. |
+| `reasoning` | text | 1 to 10,000 characters. |
 
 An example:
 
@@ -51,6 +51,21 @@ An example:
 **Text rules** are the same as for saving an example through the web address: spaces at
 either end are trimmed, and text must not contain a null character or anything that cannot
 be written as valid Unicode.
+
+**The limits must fit at both ends.** A sender must never be allowed to approve something
+the reader will refuse, or a valid approval would end up in the dead-letter topic and never
+be learned from. So for every field, the sender's own limit must be no bigger than the
+reader's:
+
+| Field | The sender accepts (assessment service) | The reader accepts (knowledge service) |
+|---|---|---|
+| `student_work` | 20,000 characters | 20,000 characters |
+| `grade` | 20 characters | 100 characters |
+| `reasoning` | 10,000 characters | 10,000 characters |
+
+If you change a limit in either service, change the other service and this table in the
+same piece of work. Each service has a test that fails if its own limit drifts from this
+table.
 
 **No extra fields.** A field that is not in the table is a mistake and the message is
 refused. To add or change a field, raise `schema_version` to 2 and update this file. The
