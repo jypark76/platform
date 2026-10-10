@@ -100,3 +100,20 @@ def test_the_results_contract_describes_the_trimming_rules_truthfully():
     text = (CONTRACTS / "grading-results.md").read_text(encoding="utf-8")
     assert "exactly as written" in text
     assert "spaces at either end are trimmed" not in text
+
+
+# The consumers put a reason code in the dead-letter header. Each code a consumer can produce must
+# be written in its contract, or a person reading the dead-letter topic meets a code nobody
+# explained.
+@pytest.mark.parametrize(
+    "name, codes",
+    [
+        ("approved-examples.md", ["invalid_json", "unknown_schema_version", "invalid_field", "key_mismatch", "label_conflict", "save_rejected"]),
+        ("grading-results.md", ["invalid_json", "unknown_schema_version", "invalid_field", "key_mismatch", "unknown_submission", "record_rejected"]),
+        ("grading-jobs.md", ["invalid_json", "unknown_schema_version", "invalid_field", "key_mismatch"]),
+    ],
+)
+def test_every_reason_code_the_readers_use_is_written_in_the_contract(name, codes):
+    text = (CONTRACTS / name).read_text(encoding="utf-8")
+    for code in codes:
+        assert f"`{code}`" in text, f"{name} does not explain the reason code {code}"
