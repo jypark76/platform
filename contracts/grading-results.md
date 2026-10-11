@@ -22,6 +22,10 @@ quick, so 3 lanes are plenty.
 ## The message
 
 **The key** is the submission ID, written as text (a UUID).
+The key must be that UUID written the normal way: lowercase hexadecimal with hyphens, as in the
+example (capitals are accepted). Any other spelling of the same number (braces, no hyphens, a
+`urn:uuid:` prefix, spaces, a trailing newline) is refused by the reader as `key_mismatch`, so
+nothing a producer types can reach a log line.
 
 **The value** is one JSON object in UTF-8 with exactly these fields:
 
