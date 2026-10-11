@@ -1,0 +1,15 @@
+# In plain English: the libraries needed only for running the automated checks on the Kubernetes files,
+# written by hand. requirements-dev.txt is generated from this file with every library pinned to an exact
+# version and a hash. This repo has no service code, so there is nothing else.
+# To regenerate the locked file after editing this one, run this from this folder (it needs Docker):
+#   docker run --rm -v "$PWD:/work" -w /work python:3.12-slim sh -c "pip install -q uv==0.12.24 && uv pip compile requirements-dev.in --output-file requirements-dev.txt --generate-hashes --universal --python-version 3.12"
+# The python:3.12-slim image is the same system the service image is built on.
+
+# The test runner.
+pytest==9.1.1
+
+# Reads the rendered Kubernetes files in the Kubernetes file checks.
+pyyaml==6.0.3
+
+# The tool that installs the libraries, pinned too.
+pip==26.2.1
