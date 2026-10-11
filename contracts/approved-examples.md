@@ -23,6 +23,10 @@ Both topics are created by the job in `kafka/base/topics-job.yaml`.
 **The key** is the submission ID, written as text (a UUID such as
 `3f2b8c1e-9a4d-4e7b-8c55-0d1f6a7b9e21`). It means repeats of the same submission always
 land in the same lane.
+The key must be that UUID written the normal way: lowercase hexadecimal with hyphens, as in the
+example (capitals are accepted). Any other spelling of the same number (braces, no hyphens, a
+`urn:uuid:` prefix, spaces, a trailing newline) is refused by the reader as `key_mismatch`, so
+nothing a producer types can reach a log line.
 
 **The value** is one JSON object in UTF-8 with exactly these fields:
 
