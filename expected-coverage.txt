@@ -1,0 +1,6 @@
+# In plain English: the OWASP weaknesses (CWEs) this repo claims its tests prove are stopped.
+#
+# The pipeline fails if a CWE listed here has no passing test, or if a test is tagged with a CWE that is
+# not listed here. So deleting or skipping a guardrail test cannot go unnoticed, and a new claim has to
+# be written down on purpose. Each line is: category, CWE number, then the name for people to read.
+# Add a line here in the same change that adds the tagged test.
