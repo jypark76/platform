@@ -29,11 +29,17 @@ spec:
       terminationGracePeriodSeconds: 60
       # Runs as a normal user (1000 is the user inside the Kafka image), never as
       # root. fsGroup makes the saved disk writable for that user.
+      # No Kubernetes API token: this pod never talks to the Kubernetes API, and a stolen token would be a
+      # free key to it.
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+        # The container runtime's default filter blocks dozens of rarely used system calls.
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: kafka
           image: apache/kafka
