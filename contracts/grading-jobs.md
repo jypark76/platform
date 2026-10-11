@@ -25,6 +25,11 @@ that can work at the same time.
 
 **The key** is the submission ID, written as text (a UUID). Jobs for the same submission
 always land in the same lane, in order.
+The key must be that UUID written the normal way: hexadecimal with hyphens, as in the example (capitals are
+accepted). Any other spelling of the same number (braces, no hyphens, a `urn:uuid:` prefix, spaces, a trailing
+newline) is refused by the reader as `key_mismatch`, so nothing a producer types can reach a log line. The same
+rule applies to the UUID fields in the value: `submission_id` and `assignment_id` written any other way are
+refused as `invalid_field`.
 
 **The value** is one JSON object in UTF-8 with exactly these fields:
 
@@ -100,12 +105,15 @@ that way: grading must not depend on, or leak, who the student is.
 - **A message that can never be graded** is copied to `grading-jobs.dead-letter`, with a
   short reason in a header called `error`, and then marked done so it cannot block the
   messages behind it. This covers: not valid JSON, an unknown `schema_version`, a rule above
-  broken, and a key that does not equal `submission_id`.
+  broken, a key that does not equal `submission_id`, and a job the grader refuses (the grading
+  step says this job can never be graded, or gives a grade or reasoning that the `grading-results`
+  rules would refuse).
 - **Temporary trouble**, such as the AI service being unreachable, is not marked done. The
   message is tried again.
 
-The reason codes in the `error` header so far are: `invalid_json`, `unknown_schema_version`,
-`invalid_field` and `key_mismatch`. More may be added, in this file, when the worker is built.
+The reason codes in the `error` header are: `invalid_json`, `unknown_schema_version`,
+`invalid_field`, `key_mismatch` and `grading_refused`. More may be added, in this file, when the
+worker changes.
 The reader never puts student text in its logs.
 
 ## The dead-letter topic

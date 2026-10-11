@@ -110,7 +110,7 @@ def test_the_results_contract_describes_the_trimming_rules_truthfully():
     [
         ("approved-examples.md", ["invalid_json", "unknown_schema_version", "invalid_field", "key_mismatch", "label_conflict", "save_rejected"]),
         ("grading-results.md", ["invalid_json", "unknown_schema_version", "invalid_field", "key_mismatch", "unknown_submission", "unknown_version", "record_rejected"]),
-        ("grading-jobs.md", ["invalid_json", "unknown_schema_version", "invalid_field", "key_mismatch"]),
+        ("grading-jobs.md", ["invalid_json", "unknown_schema_version", "invalid_field", "key_mismatch", "grading_refused"]),
     ],
 )
 def test_every_reason_code_the_readers_use_is_written_in_the_contract(name, codes):
@@ -122,7 +122,7 @@ def test_every_reason_code_the_readers_use_is_written_in_the_contract(name, code
 # The readers refuse a key that is not the UUID written the normal way (Python's own UUID reader also
 # accepts a trailing newline, spaces, braces and more). The contract must say so, or a sender could
 # reasonably write the key another way and see its messages dead-lettered.
-@pytest.mark.parametrize("name", ["approved-examples.md", "grading-results.md"])
+@pytest.mark.parametrize("name", ["approved-examples.md", "grading-results.md", "grading-jobs.md"])
 def test_the_contract_says_the_key_must_be_the_uuid_written_the_normal_way(name):
     text = (CONTRACTS / name).read_text(encoding="utf-8")
     assert "written the normal way" in text
