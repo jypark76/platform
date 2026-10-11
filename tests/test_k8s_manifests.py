@@ -386,6 +386,7 @@ def test_catches_a_missing_tag():
     assert any("no version tag" in problem for problem in find_problems(docs))
 
 
+@pytest.mark.owasp("A01", 668)
 def test_catches_a_service_open_to_the_outside():
     docs = good_docs()
     docs[1]["spec"]["type"] = "NodePort"
@@ -404,6 +405,7 @@ def test_catches_a_pointer_to_something_that_does_not_exist():
     assert any("does not exist" in problem for problem in find_problems(docs))
 
 
+@pytest.mark.owasp("A01", 276, 732)
 def test_catches_a_pod_that_may_run_as_root():
     docs = good_docs()
     pod_of(of_kind(docs, "StatefulSet"))["securityContext"] = {}
@@ -412,6 +414,7 @@ def test_catches_a_pod_that_may_run_as_root():
     assert any("runAsUser" in problem for problem in problems)
 
 
+@pytest.mark.owasp("A01", 276, 732)
 def test_catches_privilege_escalation_and_kept_capabilities():
     docs = good_docs()
     security = containers_of(of_kind(docs, "StatefulSet"))[0]["securityContext"]
