@@ -1,6 +1,7 @@
 # In plain English: shared test setup. It checks the OWASP tags before any test runs.
 import pytest
 
+import owasp_report
 import owasp_tags
 
 
@@ -12,3 +13,8 @@ def pytest_collection_modifyitems(items):
         owasp_tags.check_items(items)
     except ValueError as problem:
         raise pytest.UsageError(f"bad owasp tag: {problem}") from None
+
+
+# In plain English: switches on the coverage report (owasp_report.py) for every run.
+def pytest_configure(config):
+    config.pluginmanager.register(owasp_report.OwaspReport(config), "owasp-report")

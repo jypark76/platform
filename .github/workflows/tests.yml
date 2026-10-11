@@ -30,7 +30,13 @@ jobs:
 
       - run: pip install -r requirements-dev.txt
 
+      # OWASP_ENFORCE_COVERAGE=1 turns on the guardrail coverage check (tests/owasp_report.py): the
+      # run fails if a CWE listed in expected-coverage.txt has no passing test, or a test is tagged
+      # with a CWE that is not listed. It also writes the coverage table to the run summary page.
+      # Platform has no tagged tests yet, so the list is empty; the check stays on so the first tag must be declared.
       - run: pytest -v
+        env:
+          OWASP_ENFORCE_COVERAGE: "1"
 
   # In plain English: checks the Kubernetes files before they ever reach a cluster.
   # The deploy script is checked with shellcheck, and the final laptop files are built
