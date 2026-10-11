@@ -20,3 +20,5 @@ A03 1357 Reliance on Insufficiently Trustworthy Component
 A03 1395 Dependency on Vulnerable Third-Party Component
 A07 259 Use of Hard-coded Password
 A07 798 Use of Hard-coded Credentials
+A08 494 Download of Code Without Integrity Check
+A08 829 Inclusion of Functionality from Untrusted Control Sphere
