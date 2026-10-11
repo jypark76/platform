@@ -15,3 +15,5 @@ A03 1104 Use of Unmaintained Third Party Components
 A03 1329 Reliance on Component That is Not Updateable
 A03 1357 Reliance on Insufficiently Trustworthy Component
 A03 1395 Dependency on Vulnerable Third-Party Component
+A07 259 Use of Hard-coded Password
+A07 798 Use of Hard-coded Credentials
