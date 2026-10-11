@@ -1,0 +1,14 @@
+# In plain English: shared test setup. It checks the OWASP tags before any test runs.
+import pytest
+
+import owasp_tags
+
+
+# In plain English: before any test runs, check every OWASP tag. A malformed tag (wrong category, a
+# CWE number that is not a number, a repeat) stops the whole run with a message naming the test,
+# because a wrong tag would show a guardrail as covered when it is not.
+def pytest_collection_modifyitems(items):
+    try:
+        owasp_tags.check_items(items)
+    except ValueError as problem:
+        raise pytest.UsageError(f"bad owasp tag: {problem}") from None
