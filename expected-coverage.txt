@@ -10,6 +10,9 @@ A01 540 Inclusion of Sensitive Information in Source Code
 A01 615 Inclusion of Sensitive Information in Source Code Comments
 A01 668 Exposure of Resource to Wrong Sphere
 A01 732 Incorrect Permission Assignment for Critical Resource
+A02 16 Configuration
+A02 260 Password in Configuration File
+A02 526 Exposure of Sensitive Information Through Environmental Variables
 A03 1035 2017 Top 10 A9: Using Components with Known Vulnerabilities
 A03 1104 Use of Unmaintained Third Party Components
 A03 1329 Reliance on Component That is Not Updateable

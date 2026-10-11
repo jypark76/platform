@@ -32,10 +32,16 @@ spec:
     spec:
       restartPolicy: OnFailure
       enableServiceLinks: false
+      # No Kubernetes API token: this pod never talks to the Kubernetes API, and a stolen token would be a
+      # free key to it.
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
+        # The container runtime's default filter blocks dozens of rarely used system calls.
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: create-topics
           image: apache/kafka
