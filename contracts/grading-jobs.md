@@ -107,13 +107,16 @@ that way: grading must not depend on, or leak, who the student is.
   messages behind it. This covers: not valid JSON, an unknown `schema_version`, a rule above
   broken, a key that does not equal `submission_id`, and a job the grader refuses (the grading
   step says this job can never be graded, or gives a grade or reasoning that the `grading-results`
-  rules would refuse).
-- **Temporary trouble**, such as the AI service being unreachable, is not marked done. The
-  message is tried again.
+  rules would refuse), and a job the knowledge service refuses for good (it answers 400, 413 or
+  422 to the lookup of similar examples, which retrying can never change).
+- **Temporary trouble**, such as the AI service or the knowledge service being unreachable or too
+  slow, or the knowledge service answering with anything else but a good reply (a wrong key, a
+  wrong address, too many requests, a server error), is not marked done. The worker stops, is
+  restarted, and the message is tried again.
 
 The reason codes in the `error` header are: `invalid_json`, `unknown_schema_version`,
-`invalid_field`, `key_mismatch` and `grading_refused`. More may be added, in this file, when the
-worker changes.
+`invalid_field`, `key_mismatch`, `grading_refused` and `lookup_refused`. More may be added, in this
+file, when the worker changes.
 The reader never puts student text in its logs.
 
 ## The dead-letter topic
