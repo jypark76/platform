@@ -6,7 +6,7 @@
 # The python:3.12-slim image is the same system the service image is built on.
 
 # The test runner.
-pytest==9.1.1
+pytest==9.2.0
 
 # Reads the rendered Kubernetes files in the Kubernetes file checks.
 pyyaml==6.0.3
